@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 package org.sonar.server.issue.notification;
 
 import org.junit.Before;
@@ -30,6 +31,7 @@ import org.sonar.plugins.emailnotifications.api.EmailMessage;
 import org.sonar.server.user.index.UserDoc;
 import org.sonar.server.user.index.UserIndex;
 
+import java.util.Date;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,27 +40,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonar.server.issue.notification.NewIssuesStatistics.METRIC.*;
 
-public class NewIssuesEmailTemplateTest {
+public class MyNewIssuesEmailTemplateTest {
 
   private static final String EMAIL_HEADER = "Project: Struts\n\n";
   private static final String EMAIL_TOTAL_ISSUES = "32 new issues - Total debt: 1d3h\n\n";
   private static final String EMAIL_ISSUES = "   Severity - Blocker: 0   Critical: 5   Major: 10   Minor: 3   Info: 1\n";
-  private static final String EMAIL_ASSIGNEES = "   Assignee - robin.williams: 5   al.pacino: 7   \n";
   private static final String EMAIL_TAGS = "   Tags - oscar: 3   cesar: 10   \n";
   private static final String EMAIL_COMPONENTS = "   Components:\n" +
     "      /path/to/file : 3\n" +
     "      /path/to/directory : 7\n";
   private static final String EMAIL_FOOTER = "\nSee it in SonarQube: http://nemo.sonarsource.org/issues/search#projectUuids=ABCDE|createdAt=2010-05-1";
 
-  NewIssuesEmailTemplate template;
+  MyNewIssuesEmailTemplate sut;
   DefaultI18n i18n;
   UserIndex userIndex;
+  Date date;
 
   @Before
   public void setUp() {
     EmailSettings settings = mock(EmailSettings.class);
     when(settings.getServerBaseURL()).thenReturn("http://nemo.sonarsource.org");
     i18n = mock(DefaultI18n.class);
+    date = new Date();
     userIndex = mock(UserIndex.class);
     // returns the login passed in parameter
     when(userIndex.getNullableByLogin(anyString())).thenAnswer(new Answer<UserDoc>() {
@@ -73,13 +76,14 @@ public class NewIssuesEmailTemplateTest {
     when(i18n.message(any(Locale.class), eq("severity.MINOR"), anyString())).thenReturn("Minor");
     when(i18n.message(any(Locale.class), eq("severity.INFO"), anyString())).thenReturn("Info");
 
-    template = new NewIssuesEmailTemplate(settings, i18n, userIndex);
+    sut = new MyNewIssuesEmailTemplate(settings, i18n, userIndex);
   }
 
   @Test
-  public void shouldNotFormatIfNotCorrectNotification() {
-    Notification notification = new Notification("other-notif");
-    EmailMessage message = template.format(notification);
+  public void no_format_if_not_the_correct_notif() {
+    // not to be mixed with my-new-issues
+    Notification notification = new Notification("new-issues");
+    EmailMessage message = sut.format(notification);
     assertThat(message).isNull();
   }
 
@@ -92,7 +96,6 @@ public class NewIssuesEmailTemplateTest {
    * 32 new issues - Total debt: 1d3h
    *
    *    Severity - Blocker: 0   Critical: 5   Major: 10   Minor: 3   Info: 1
-   *    Assignee - robin.williams: 5   al.pacino: 7
    *    Tags - oscar: 3   cesar:10
    *    Components:
    *       /path/to/file : 3
@@ -104,40 +107,44 @@ public class NewIssuesEmailTemplateTest {
   @Test
   public void format_email_with_all_fields_filled() {
     Notification notification = newNotification();
-    addAssignees(notification);
     addTags(notification);
     addComponents(notification);
 
-    EmailMessage message = template.format(notification);
-
-    assertThat(message.getMessageId()).isEqualTo("new-issues/org.apache:struts");
-    assertThat(message.getSubject()).isEqualTo("Struts: 32 new issues");
+    EmailMessage message = sut.format(notification);
 
     // TODO datetime to be completed when test is isolated from JVM timezone
     assertThat(message.getMessage()).startsWith("" +
       EMAIL_HEADER +
       EMAIL_TOTAL_ISSUES +
       EMAIL_ISSUES +
-      EMAIL_ASSIGNEES +
       EMAIL_TAGS +
       EMAIL_COMPONENTS +
       EMAIL_FOOTER);
   }
 
   @Test
+  public void message_id() throws Exception {
+    Notification notification = newNotification();
+
+    EmailMessage message = sut.format(notification);
+
+    assertThat(message.getMessageId()).isEqualTo("my-new-issues/org.apache:struts");
+  }
+
+  @Test
+  public void subject() throws Exception {
+    Notification notification = newNotification();
+
+    EmailMessage message = sut.format(notification);
+
+    assertThat(message.getSubject()).isEqualTo("You have 32 new issues on project Struts");
+  }
+
+  @Test
   public void format_email_with_no_assignees_tags_nor_components() throws Exception {
     Notification notification = newNotification();
 
-    when(i18n.message(any(Locale.class), eq("severity.BLOCKER"), anyString())).thenReturn("Blocker");
-    when(i18n.message(any(Locale.class), eq("severity.CRITICAL"), anyString())).thenReturn("Critical");
-    when(i18n.message(any(Locale.class), eq("severity.MAJOR"), anyString())).thenReturn("Major");
-    when(i18n.message(any(Locale.class), eq("severity.MINOR"), anyString())).thenReturn("Minor");
-    when(i18n.message(any(Locale.class), eq("severity.INFO"), anyString())).thenReturn("Info");
-
-    EmailMessage message = template.format(notification);
-
-    assertThat(message.getMessageId()).isEqualTo("new-issues/org.apache:struts");
-    assertThat(message.getSubject()).isEqualTo("Struts: 32 new issues");
+    EmailMessage message = sut.format(notification);
 
     // TODO datetime to be completed when test is isolated from JVM timezone
     assertThat(message.getMessage()).startsWith("" +
@@ -149,20 +156,21 @@ public class NewIssuesEmailTemplateTest {
 
   @Test
   public void do_not_add_footer_when_properties_missing() {
-    Notification notification = new NewIssuesNotification()
+    Notification notification = new MyNewIssuesNotification()
       .setFieldValue(SEVERITY + ".count", "32")
       .setFieldValue("projectName", "Struts");
 
-    EmailMessage message = template.format(notification);
+    EmailMessage message = sut.format(notification);
     assertThat(message.getMessage()).doesNotContain("See it");
   }
 
   private Notification newNotification() {
-    return new NewIssuesNotification()
+    return new MyNewIssuesNotification()
       .setFieldValue("projectName", "Struts")
       .setFieldValue("projectKey", "org.apache:struts")
       .setFieldValue("projectUuid", "ABCDE")
       .setFieldValue("projectDate", "2010-05-18T14:50:45+0000")
+      .setFieldValue("assignee", "lo.gin")
       .setFieldValue(DEBT + ".count", "1d3h")
       .setFieldValue(SEVERITY + ".count", "32")
       .setFieldValue(SEVERITY + ".INFO.count", "1")
@@ -170,14 +178,6 @@ public class NewIssuesEmailTemplateTest {
       .setFieldValue(SEVERITY + ".MAJOR.count", "10")
       .setFieldValue(SEVERITY + ".CRITICAL.count", "5")
       .setFieldValue(SEVERITY + ".BLOCKER.count", "0");
-  }
-
-  private void addAssignees(Notification notification) {
-    notification
-      .setFieldValue(ASSIGNEE + ".1.label", "robin.williams")
-      .setFieldValue(ASSIGNEE + ".1.count", "5")
-      .setFieldValue(ASSIGNEE + ".2.label", "al.pacino")
-      .setFieldValue(ASSIGNEE + ".2.count", "7");
   }
 
   private void addTags(Notification notification) {

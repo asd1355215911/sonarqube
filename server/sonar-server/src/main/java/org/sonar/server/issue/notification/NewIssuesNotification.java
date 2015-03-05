@@ -42,6 +42,10 @@ public class NewIssuesNotification extends Notification {
     super(TYPE);
   }
 
+  protected NewIssuesNotification(String type) {
+    super(type);
+  }
+
   public NewIssuesNotification setAnalysisDate(Date d) {
     setFieldValue(FIELD_PROJECT_DATE, DateUtils.formatDateTime(d));
     return this;
@@ -54,15 +58,27 @@ public class NewIssuesNotification extends Notification {
     return this;
   }
 
-  public NewIssuesNotification setStatistics(Component project, NewIssuesStatistics stats) {
+  public NewIssuesNotification setStatistics(Component project, NewIssuesStatistics.Stats stats) {
     setDefaultMessage(stats.countForMetric(SEVERITY) + " new issues on " + project.longName() + ".\n");
 
     setSeverityStatistics(stats);
-    setTop5CountsForMetric(stats, METRIC.LOGIN);
-    setTop5CountsForMetric(stats, METRIC.TAGS);
-    setTop5CountsForMetric(stats, METRIC.COMPONENT);
+    setAssigneesStatistics(stats);
+    setTagsStatistics(stats);
+    setComponentsStatistics(stats);
 
     return this;
+  }
+
+  protected void setComponentsStatistics(NewIssuesStatistics.Stats stats) {
+    setTop5CountsForMetric(stats, METRIC.COMPONENT);
+  }
+
+  protected void setTagsStatistics(NewIssuesStatistics.Stats stats) {
+    setTop5CountsForMetric(stats, METRIC.TAGS);
+  }
+
+  protected void setAssigneesStatistics(NewIssuesStatistics.Stats stats) {
+    setTop5CountsForMetric(stats, METRIC.ASSIGNEE);
   }
 
   public NewIssuesNotification setDebt(String debt) {
@@ -70,18 +86,18 @@ public class NewIssuesNotification extends Notification {
     return this;
   }
 
-  private void setTop5CountsForMetric(NewIssuesStatistics stats, METRIC metric) {
+  protected void setSeverityStatistics(NewIssuesStatistics.Stats stats) {
+    setFieldValue(SEVERITY + COUNT, String.valueOf(stats.countForMetric(SEVERITY)));
+    for (String severity : Severity.ALL) {
+      setFieldValue(SEVERITY + "." + severity + COUNT, String.valueOf(stats.countForMetric(SEVERITY, severity)));
+    }
+  }
+
+  private void setTop5CountsForMetric(NewIssuesStatistics.Stats stats, METRIC metric) {
     List<Multiset.Entry<String>> loginStats = stats.statsForMetric(metric);
     for (int i = 0; i < 5 && i < loginStats.size(); i++) {
       setFieldValue(metric + "." + (i + 1) + COUNT, String.valueOf(loginStats.get(i).getCount()));
       setFieldValue(metric + "." + (i + 1) + ".label", loginStats.get(i).getElement());
-    }
-  }
-
-  private void setSeverityStatistics(NewIssuesStatistics stats) {
-    setFieldValue(SEVERITY + COUNT, String.valueOf(stats.countForMetric(SEVERITY)));
-    for (String severity : Severity.ALL) {
-      setFieldValue(SEVERITY + "." + severity + COUNT, String.valueOf(stats.countForMetric(SEVERITY, severity)));
     }
   }
 }

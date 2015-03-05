@@ -163,11 +163,7 @@ import org.sonar.server.issue.index.IssueAuthorizationIndexer;
 import org.sonar.server.issue.index.IssueIndex;
 import org.sonar.server.issue.index.IssueIndexDefinition;
 import org.sonar.server.issue.index.IssueIndexer;
-import org.sonar.server.issue.notification.ChangesOnMyIssueNotificationDispatcher;
-import org.sonar.server.issue.notification.IssueChangesEmailTemplate;
-import org.sonar.server.issue.notification.NewFalsePositiveNotificationDispatcher;
-import org.sonar.server.issue.notification.NewIssuesEmailTemplate;
-import org.sonar.server.issue.notification.NewIssuesNotificationDispatcher;
+import org.sonar.server.issue.notification.*;
 import org.sonar.server.issue.ws.ComponentTagsAction;
 import org.sonar.server.issue.ws.IssueActionsWriter;
 import org.sonar.server.issue.ws.IssueShowAction;
@@ -685,6 +681,7 @@ class ServerComponents {
     pico.addSingleton(IssueActionsWriter.class);
     pico.addSingleton(IssueQueryService.class);
     pico.addSingleton(NewIssuesEmailTemplate.class);
+    pico.addSingleton(MyNewIssuesEmailTemplate.class);
     pico.addSingleton(IssueChangesEmailTemplate.class);
     pico.addSingleton(ChangesOnMyIssueNotificationDispatcher.class);
     pico.addSingleton(ChangesOnMyIssueNotificationDispatcher.newMetadata());
@@ -692,6 +689,8 @@ class ServerComponents {
     pico.addSingleton(NewIssuesNotificationDispatcher.newMetadata());
     pico.addSingleton(NewFalsePositiveNotificationDispatcher.class);
     pico.addSingleton(NewFalsePositiveNotificationDispatcher.newMetadata());
+    pico.addSingleton(MyNewIssuesNotificationDispatcher.class);
+    pico.addSingleton(MyNewIssuesNotificationDispatcher.newMetadata());
 
     // issue filters
     pico.addSingleton(IssueFilterService.class);

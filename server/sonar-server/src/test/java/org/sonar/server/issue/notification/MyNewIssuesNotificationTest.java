@@ -34,9 +34,9 @@ import java.util.Date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.server.issue.notification.NewIssuesStatistics.METRIC.*;
 
-public class NewIssuesNotificationTest {
+public class MyNewIssuesNotificationTest {
 
-  NewIssuesNotification sut = new NewIssuesNotification();
+  MyNewIssuesNotification sut = new MyNewIssuesNotification();
   NewIssuesStatistics.Stats stats = new NewIssuesStatistics.Stats();
 
   @Test
@@ -48,9 +48,9 @@ public class NewIssuesNotificationTest {
 
     sut.setProject(component);
 
-    assertThat(sut.getFieldValue(NewIssuesEmailTemplate.FIELD_PROJECT_NAME)).isEqualTo("project-long-name");
-    assertThat(sut.getFieldValue(NewIssuesEmailTemplate.FIELD_PROJECT_UUID)).isEqualTo("project-uuid");
-    assertThat(sut.getFieldValue(NewIssuesEmailTemplate.FIELD_PROJECT_KEY)).isEqualTo("project-key");
+    assertThat(sut.getFieldValue(MyNewIssuesEmailTemplate.FIELD_PROJECT_NAME)).isEqualTo("project-long-name");
+    assertThat(sut.getFieldValue(MyNewIssuesEmailTemplate.FIELD_PROJECT_UUID)).isEqualTo("project-uuid");
+    assertThat(sut.getFieldValue(MyNewIssuesEmailTemplate.FIELD_PROJECT_KEY)).isEqualTo("project-key");
   }
 
   @Test
@@ -59,7 +59,7 @@ public class NewIssuesNotificationTest {
 
     sut.setAnalysisDate(date);
 
-    assertThat(sut.getFieldValue(NewIssuesEmailTemplate.FIELD_PROJECT_DATE)).isEqualTo(DateUtils.formatDateTime(date));
+    assertThat(sut.getFieldValue(MyNewIssuesEmailTemplate.FIELD_PROJECT_DATE)).isEqualTo(DateUtils.formatDateTime(date));
   }
 
   @Test
@@ -73,10 +73,6 @@ public class NewIssuesNotificationTest {
 
     assertThat(sut.getFieldValue(SEVERITY + ".INFO.count")).isEqualTo("5");
     assertThat(sut.getFieldValue(SEVERITY + ".BLOCKER.count")).isEqualTo("3");
-    assertThat(sut.getFieldValue(ASSIGNEE + ".1.label")).isEqualTo("maynard");
-    assertThat(sut.getFieldValue(ASSIGNEE + ".1.count")).isEqualTo("5");
-    assertThat(sut.getFieldValue(ASSIGNEE + ".2.label")).isEqualTo("keenan");
-    assertThat(sut.getFieldValue(ASSIGNEE + ".2.count")).isEqualTo("3");
     assertThat(sut.getFieldValue(TAGS + ".1.label")).isEqualTo("owasp");
     assertThat(sut.getFieldValue(TAGS + ".1.count")).isEqualTo("8");
     assertThat(sut.getFieldValue(TAGS + ".2.label")).isEqualTo("bug");

@@ -17,24 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 package org.sonar.server.issue.notification;
 
-import org.sonar.api.config.EmailSettings;
-import org.sonar.api.i18n.I18n;
-import org.sonar.api.notifications.Notification;
-import org.sonar.server.user.index.UserIndex;
+import static org.sonar.server.issue.notification.AbstractNewIssuesEmailTemplate.FIELD_ASSIGNEE;
 
-/**
- * Creates email message for notification "new-issues".
- */
-public class NewIssuesEmailTemplate extends AbstractNewIssuesEmailTemplate {
+public class MyNewIssuesNotification extends NewIssuesNotification {
 
-  public NewIssuesEmailTemplate(EmailSettings settings, I18n i18n, UserIndex userIndex) {
-    super(settings, i18n, userIndex);
+  public static final String TYPE = "my-new-issues";
+
+  public MyNewIssuesNotification() {
+    super(TYPE);
   }
 
-  @Override
-  protected boolean shouldNotFormat(Notification notification) {
-    return !NewIssuesNotification.TYPE.equals(notification.getType());
+  public MyNewIssuesNotification setAssignee(String assignee) {
+    setFieldValue(FIELD_ASSIGNEE, assignee);
+
+    return this;
   }
 }

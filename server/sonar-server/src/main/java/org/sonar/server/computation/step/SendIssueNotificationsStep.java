@@ -28,12 +28,14 @@ import org.sonar.server.computation.ComputationContext;
 import org.sonar.server.computation.issue.IssueCache;
 import org.sonar.server.computation.issue.RuleCache;
 import org.sonar.server.issue.notification.IssueChangeNotification;
+import org.sonar.server.issue.notification.MyNewIssuesNotification;
 import org.sonar.server.issue.notification.NewIssuesNotification;
 import org.sonar.server.issue.notification.NewIssuesStatistics;
 import org.sonar.server.notifications.NotificationService;
 import org.sonar.server.util.CloseableIterator;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -94,15 +96,29 @@ public class SendIssueNotificationsStep implements ComputationStep {
     sendNewIssuesStatistics(context, newIssuesStats);
   }
 
-  private void sendNewIssuesStatistics(ComputationContext context, NewIssuesStatistics stats) {
-    if (stats.hasIssues()) {
+  private void sendNewIssuesStatistics(ComputationContext context, NewIssuesStatistics statistics) {
+    if (statistics.hasIssues()) {
+      NewIssuesStatistics.Stats globalStatistics = statistics.globalStatistics();
       ComponentDto project = context.getProject();
       NewIssuesNotification notification = new NewIssuesNotification();
       notification.setProject(project);
       notification.setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()));
-      notification.setStatistics(project, stats);
-      notification.setDebt(durations.encode(stats.debt()));
+      notification.setStatistics(project, globalStatistics);
+      notification.setDebt(durations.encode(globalStatistics.debt()));
       service.deliver(notification);
+
+      for (Map.Entry<String, NewIssuesStatistics.Stats> assigneeAndStatisticsTuple : statistics.assigneesStatistics().entrySet()) {
+        String assignee = assigneeAndStatisticsTuple.getKey();
+        NewIssuesStatistics.Stats assigneeStatistics = assigneeAndStatisticsTuple.getValue();
+        MyNewIssuesNotification myNewIssuesNotification = new MyNewIssuesNotification()
+          .setAssignee(assignee);
+        myNewIssuesNotification.setProject(project);
+        myNewIssuesNotification.setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()));
+        myNewIssuesNotification.setStatistics(project, assigneeStatistics);
+        myNewIssuesNotification.setDebt(durations.encode(assigneeStatistics.debt()));
+        
+        service.deliver(myNewIssuesNotification);
+      }
     }
   }
 
