@@ -41,9 +41,9 @@ import static org.sonar.server.issue.notification.NewIssuesStatistics.METRIC.*;
 public class NewIssuesEmailTemplateTest {
 
   private static final String EMAIL_HEADER = "Project: Struts\n\n";
-  private static final String EMAIL_TOTAL_ISSUES = "32 new issues - Total debt: 1d3h\n\n";
-  private static final String EMAIL_ISSUES = "   Severity - Blocker: 0   Critical: 5   Major: 10   Minor: 3   Info: 1\n";
-  private static final String EMAIL_ASSIGNEES = "   Assignee - robin.williams: 5   al.pacino: 7   \n";
+  private static final String EMAIL_TOTAL_ISSUES = "32 new issues (new debt: 1d3h)\n\n";
+  private static final String EMAIL_ISSUES = "    Severity\n        Blocker: 0    Critical: 5    Major: 10    Minor: 3    Info: 1\n\n";
+  private static final String EMAIL_ASSIGNEES = "    Assignee\n        robin.williams: 5\n        al.pacino: 7\n";
   private static final String EMAIL_TAGS = "   Tags - oscar: 3   cesar: 10   \n";
   private static final String EMAIL_COMPONENTS = "   Components:\n" +
     "      /path/to/file : 3\n" +
@@ -73,7 +73,7 @@ public class NewIssuesEmailTemplateTest {
     when(i18n.message(any(Locale.class), eq("severity.MINOR"), anyString())).thenReturn("Minor");
     when(i18n.message(any(Locale.class), eq("severity.INFO"), anyString())).thenReturn("Info");
 
-    template = new NewIssuesEmailTemplate(settings, i18n, userIndex);
+    template = new NewIssuesEmailTemplate(settings, i18n);
   }
 
   @Test
@@ -111,7 +111,7 @@ public class NewIssuesEmailTemplateTest {
     EmailMessage message = template.format(notification);
 
     assertThat(message.getMessageId()).isEqualTo("new-issues/org.apache:struts");
-    assertThat(message.getSubject()).isEqualTo("Struts: 32 new issues");
+    assertThat(message.getSubject()).isEqualTo("Struts: 32 new issues (new debt: 1d3h)");
 
     // TODO datetime to be completed when test is isolated from JVM timezone
     assertThat(message.getMessage()).startsWith("" +
@@ -136,9 +136,6 @@ public class NewIssuesEmailTemplateTest {
 
     EmailMessage message = template.format(notification);
 
-    assertThat(message.getMessageId()).isEqualTo("new-issues/org.apache:struts");
-    assertThat(message.getSubject()).isEqualTo("Struts: 32 new issues");
-
     // TODO datetime to be completed when test is isolated from JVM timezone
     assertThat(message.getMessage()).startsWith("" +
       EMAIL_HEADER +
@@ -149,7 +146,7 @@ public class NewIssuesEmailTemplateTest {
 
   @Test
   public void do_not_add_footer_when_properties_missing() {
-    Notification notification = new NewIssuesNotification()
+    Notification notification = new Notification(NewIssuesNotification.TYPE)
       .setFieldValue(SEVERITY + ".count", "32")
       .setFieldValue("projectName", "Struts");
 
@@ -158,7 +155,7 @@ public class NewIssuesEmailTemplateTest {
   }
 
   private Notification newNotification() {
-    return new NewIssuesNotification()
+    return new Notification(NewIssuesNotification.TYPE)
       .setFieldValue("projectName", "Struts")
       .setFieldValue("projectKey", "org.apache:struts")
       .setFieldValue("projectUuid", "ABCDE")

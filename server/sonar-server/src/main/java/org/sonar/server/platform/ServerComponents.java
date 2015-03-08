@@ -691,6 +691,7 @@ class ServerComponents {
     pico.addSingleton(NewFalsePositiveNotificationDispatcher.newMetadata());
     pico.addSingleton(MyNewIssuesNotificationDispatcher.class);
     pico.addSingleton(MyNewIssuesNotificationDispatcher.newMetadata());
+    pico.addSingleton(NewIssuesNotificationFactory.class);
 
     // issue filters
     pico.addSingleton(IssueFilterService.class);

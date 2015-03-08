@@ -25,7 +25,6 @@ import org.sonar.api.i18n.I18n;
 import org.sonar.api.notifications.Notification;
 import org.sonar.api.utils.DateUtils;
 import org.sonar.server.issue.notification.NewIssuesStatistics.METRIC;
-import org.sonar.server.user.index.UserIndex;
 
 import java.util.Date;
 
@@ -34,8 +33,8 @@ import java.util.Date;
  */
 public class MyNewIssuesEmailTemplate extends AbstractNewIssuesEmailTemplate {
 
-  public MyNewIssuesEmailTemplate(EmailSettings settings, I18n i18n, UserIndex userIndex) {
-    super(settings, i18n, userIndex);
+  public MyNewIssuesEmailTemplate(EmailSettings settings, I18n i18n) {
+    super(settings, i18n);
   }
 
   @Override

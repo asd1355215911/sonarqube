@@ -92,7 +92,7 @@ public class NewIssuesStatistics {
 
     public void add(Issue issue) {
       distributions.get(SEVERITY).add(issue.severity());
-      distributions.get(COMPONENT).add(issue.componentUuid());
+      distributions.get(COMPONENT).add(issue.componentKey());
       if (issue.assignee() != null) {
         distributions.get(ASSIGNEE).add(issue.assignee());
       }

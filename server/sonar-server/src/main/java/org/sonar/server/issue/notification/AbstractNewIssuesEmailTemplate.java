@@ -20,7 +20,6 @@
 
 package org.sonar.server.issue.notification;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import org.sonar.api.config.EmailSettings;
 import org.sonar.api.i18n.I18n;
@@ -30,8 +29,6 @@ import org.sonar.api.utils.DateUtils;
 import org.sonar.plugins.emailnotifications.api.EmailMessage;
 import org.sonar.plugins.emailnotifications.api.EmailTemplate;
 import org.sonar.server.issue.notification.NewIssuesStatistics.METRIC;
-import org.sonar.server.user.index.UserDoc;
-import org.sonar.server.user.index.UserIndex;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -45,7 +42,7 @@ import java.util.Locale;
 public abstract class AbstractNewIssuesEmailTemplate extends EmailTemplate {
 
   protected static final char NEW_LINE = '\n';
-  protected static final String TAB = "   ";
+  protected static final String TAB = "    ";
   protected static final String DOT = ".";
   protected static final String COUNT = DOT + "count";
   protected static final String LABEL = DOT + "label";
@@ -58,12 +55,10 @@ public abstract class AbstractNewIssuesEmailTemplate extends EmailTemplate {
 
   protected final EmailSettings settings;
   protected final I18n i18n;
-  protected final UserIndex userIndex;
 
-  protected AbstractNewIssuesEmailTemplate(EmailSettings settings, I18n i18n, UserIndex userIndex) {
+  public AbstractNewIssuesEmailTemplate(EmailSettings settings, I18n i18n) {
     this.settings = settings;
     this.i18n = i18n;
-    this.userIndex = userIndex;
   }
 
   public static String encode(String toEncode) {
@@ -98,77 +93,65 @@ public abstract class AbstractNewIssuesEmailTemplate extends EmailTemplate {
   protected abstract boolean shouldNotFormat(Notification notification);
 
   protected String subject(Notification notification, String projectName) {
-    return projectName + ": " + notification.getFieldValue(METRIC.SEVERITY + COUNT) + " new issues";
+    return String.format("%s: %s new issues (new debt: %s)",
+      projectName,
+      notification.getFieldValue(METRIC.SEVERITY + COUNT),
+      notification.getFieldValue(METRIC.DEBT + COUNT));
   }
 
-  protected void appendAssignees(StringBuilder message, Notification notification) {
-    if (notification.getFieldValue(METRIC.ASSIGNEE + DOT + "1" + LABEL) == null) {
+  private boolean doNotHaveValue(Notification notification, METRIC metric) {
+    return notification.getFieldValue(metric + DOT + "1" + LABEL) == null;
+  }
+
+  private void genericAppendOfMetric(METRIC metric, String label, StringBuilder message, Notification notification) {
+    if (doNotHaveValue(notification, metric)) {
       return;
     }
 
-    message.append(TAB + "Assignee - ");
+    message
+      .append(TAB)
+      .append(label)
+      .append(NEW_LINE);
     int i = 1;
-    while (notification.getFieldValue(METRIC.ASSIGNEE + DOT + i + LABEL) != null && i <= 5) {
-      String login = notification.getFieldValue(METRIC.ASSIGNEE + DOT + i + LABEL);
-      UserDoc user = userIndex.getNullableByLogin(login);
-      String name = user == null ? null : user.name();
-      message.append(Objects.firstNonNull(name, login))
-        .append(": ")
-        .append(notification.getFieldValue(METRIC.ASSIGNEE + DOT + i + COUNT));
-      if (i < 5) {
-        message.append(TAB);
-      }
-      i += 1;
-    }
-
-    message.append("\n");
-  }
-
-  protected void appendComponents(StringBuilder message, Notification notification) {
-    if (notification.getFieldValue(METRIC.COMPONENT + ".1.label") == null) {
-      return;
-    }
-
-    message.append("   Components:\n");
-    int i = 1;
-    while (notification.getFieldValue(METRIC.COMPONENT + DOT + i + LABEL) != null && i <= 5) {
-      String component = notification.getFieldValue(METRIC.COMPONENT + DOT + i + LABEL);
+    while (notification.getFieldValue(metric + DOT + i + LABEL) != null && i <= 5) {
+      String name = notification.getFieldValue(metric + DOT + i + LABEL);
       message
         .append(TAB).append(TAB)
-        .append(component)
-        .append(" : ")
-        .append(notification.getFieldValue(METRIC.COMPONENT + DOT + i + COUNT))
-        .append("\n");
-      i += 1;
-    }
-  }
-
-  protected void appendTags(StringBuilder message, Notification notification) {
-    if (notification.getFieldValue(METRIC.TAGS + DOT + "1" + LABEL) == null) {
-      return;
-    }
-
-    message.append(TAB + "Tags - ");
-    int i = 1;
-    while (notification.getFieldValue(METRIC.TAGS + DOT + i + LABEL) != null && i <= 5) {
-      String tag = notification.getFieldValue(METRIC.TAGS + DOT + i + LABEL);
-      message.append(tag)
+        .append(name)
         .append(": ")
-        .append(notification.getFieldValue(METRIC.TAGS + DOT + i + COUNT));
-      if (i < 5) {
-        message.append(TAB);
-      }
+        .append(notification.getFieldValue(metric + DOT + i + COUNT))
+        .append(NEW_LINE);
       i += 1;
     }
+
     message.append(NEW_LINE);
   }
 
+  protected void appendAssignees(StringBuilder message, Notification notification) {
+    genericAppendOfMetric(METRIC.ASSIGNEE, "Assignees", message, notification);
+  }
+
+  protected void appendComponents(StringBuilder message, Notification notification) {
+    genericAppendOfMetric(METRIC.COMPONENT, "Most impacted files", message, notification);
+  }
+
+  protected void appendTags(StringBuilder message, Notification notification) {
+    genericAppendOfMetric(METRIC.TAGS, "Tags", message, notification);
+  }
+
   protected void appendSeverity(StringBuilder message, Notification notification) {
-    message.append(notification.getFieldValue(METRIC.SEVERITY + COUNT)).append(" new issues - Total debt: ")
-      .append(notification.getFieldValue(METRIC.DEBT + COUNT))
+    message
+      .append(String.format("%s new issues (new debt: %s)",
+        notification.getFieldValue(METRIC.SEVERITY + COUNT),
+        notification.getFieldValue(METRIC.DEBT + COUNT)))
       .append(NEW_LINE).append(NEW_LINE)
-      .append(TAB + "Severity - ");
-    for (Iterator<String> severityIterator = Lists.reverse(Severity.ALL).iterator(); severityIterator.hasNext();) {
+      .append(TAB)
+      .append("Severity")
+      .append(NEW_LINE)
+      .append(TAB)
+      .append(TAB);
+
+    for (Iterator<String> severityIterator = Lists.reverse(Severity.ALL).iterator(); severityIterator.hasNext(); ) {
       String severity = severityIterator.next();
       String severityLabel = i18n.message(getLocale(), "severity." + severity, severity);
       message.append(severityLabel).append(": ").append(notification.getFieldValue(METRIC.SEVERITY + DOT + severity + COUNT));
@@ -176,7 +159,10 @@ public abstract class AbstractNewIssuesEmailTemplate extends EmailTemplate {
         message.append(TAB);
       }
     }
-    message.append(NEW_LINE);
+
+    message
+      .append(NEW_LINE)
+      .append(NEW_LINE);
   }
 
   protected void appendFooter(StringBuilder message, Notification notification) {

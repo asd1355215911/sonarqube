@@ -76,7 +76,7 @@ public class MyNewIssuesEmailTemplateTest {
     when(i18n.message(any(Locale.class), eq("severity.MINOR"), anyString())).thenReturn("Minor");
     when(i18n.message(any(Locale.class), eq("severity.INFO"), anyString())).thenReturn("Info");
 
-    sut = new MyNewIssuesEmailTemplate(settings, i18n, userIndex);
+    sut = new MyNewIssuesEmailTemplate(settings, i18n);
   }
 
   @Test
@@ -156,7 +156,7 @@ public class MyNewIssuesEmailTemplateTest {
 
   @Test
   public void do_not_add_footer_when_properties_missing() {
-    Notification notification = new MyNewIssuesNotification()
+    Notification notification = new Notification(MyNewIssuesNotification.TYPE)
       .setFieldValue(SEVERITY + ".count", "32")
       .setFieldValue("projectName", "Struts");
 
@@ -165,7 +165,7 @@ public class MyNewIssuesEmailTemplateTest {
   }
 
   private Notification newNotification() {
-    return new MyNewIssuesNotification()
+    return new Notification(MyNewIssuesNotification.TYPE)
       .setFieldValue("projectName", "Struts")
       .setFieldValue("projectKey", "org.apache:struts")
       .setFieldValue("projectUuid", "ABCDE")

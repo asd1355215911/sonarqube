@@ -22,12 +22,16 @@ package org.sonar.server.issue.notification;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.sonar.api.issue.internal.DefaultIssue;
 import org.sonar.api.rule.Severity;
 import org.sonar.api.utils.DateUtils;
 import org.sonar.api.utils.Duration;
+import org.sonar.api.utils.Durations;
 import org.sonar.core.component.ComponentDto;
 import org.sonar.server.component.ComponentTesting;
+import org.sonar.server.db.DbClient;
+import org.sonar.server.user.index.UserIndex;
 
 import java.util.Date;
 
@@ -36,8 +40,11 @@ import static org.sonar.server.issue.notification.NewIssuesStatistics.METRIC.*;
 
 public class MyNewIssuesNotificationTest {
 
-  MyNewIssuesNotification sut = new MyNewIssuesNotification();
   NewIssuesStatistics.Stats stats = new NewIssuesStatistics.Stats();
+  UserIndex userIndex = Mockito.mock(UserIndex.class);
+  DbClient dbClient = Mockito.mock(DbClient.class, Mockito.RETURNS_DEEP_STUBS);
+  Durations durations = Mockito.mock(Durations.class);
+  MyNewIssuesNotification sut = new MyNewIssuesNotification(userIndex, dbClient, durations);
 
   @Test
   public void set_project() throws Exception {
@@ -86,7 +93,7 @@ public class MyNewIssuesNotificationTest {
 
   @Test
   public void set_debt() throws Exception {
-    sut.setDebt("55min");
+    sut.setDebt(Duration.create(55));
 
     assertThat(sut.getFieldValue(DEBT + ".count")).isEqualTo("55min");
   }

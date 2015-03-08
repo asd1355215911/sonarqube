@@ -22,15 +22,14 @@ package org.sonar.server.issue.notification;
 import org.sonar.api.config.EmailSettings;
 import org.sonar.api.i18n.I18n;
 import org.sonar.api.notifications.Notification;
-import org.sonar.server.user.index.UserIndex;
 
 /**
  * Creates email message for notification "new-issues".
  */
 public class NewIssuesEmailTemplate extends AbstractNewIssuesEmailTemplate {
 
-  public NewIssuesEmailTemplate(EmailSettings settings, I18n i18n, UserIndex userIndex) {
-    super(settings, i18n, userIndex);
+  public NewIssuesEmailTemplate(EmailSettings settings, I18n i18n) {
+    super(settings, i18n);
   }
 
   @Override

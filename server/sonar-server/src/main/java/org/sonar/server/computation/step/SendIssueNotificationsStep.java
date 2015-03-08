@@ -22,15 +22,11 @@ package org.sonar.server.computation.step;
 import com.google.common.collect.ImmutableSet;
 import org.sonar.api.issue.internal.DefaultIssue;
 import org.sonar.api.resources.Qualifiers;
-import org.sonar.api.utils.Durations;
 import org.sonar.core.component.ComponentDto;
 import org.sonar.server.computation.ComputationContext;
 import org.sonar.server.computation.issue.IssueCache;
 import org.sonar.server.computation.issue.RuleCache;
-import org.sonar.server.issue.notification.IssueChangeNotification;
-import org.sonar.server.issue.notification.MyNewIssuesNotification;
-import org.sonar.server.issue.notification.NewIssuesNotification;
-import org.sonar.server.issue.notification.NewIssuesStatistics;
+import org.sonar.server.issue.notification.*;
 import org.sonar.server.notifications.NotificationService;
 import org.sonar.server.util.CloseableIterator;
 
@@ -47,23 +43,23 @@ public class SendIssueNotificationsStep implements ComputationStep {
   /**
    * Types of the notifications sent by this step
    */
-  static final Set<String> NOTIF_TYPES = ImmutableSet.of(IssueChangeNotification.TYPE, NewIssuesNotification.TYPE);
+  static final Set<String> NOTIF_TYPES = ImmutableSet.of(IssueChangeNotification.TYPE, NewIssuesNotification.TYPE, MyNewIssuesNotification.TYPE);
 
   private final IssueCache issueCache;
   private final RuleCache rules;
   private final NotificationService service;
-  private final Durations durations;
+  private NewIssuesNotificationFactory newIssuesNotificationFactory;
 
-  public SendIssueNotificationsStep(IssueCache issueCache, RuleCache rules, NotificationService service, Durations durations) {
+  public SendIssueNotificationsStep(IssueCache issueCache, RuleCache rules, NotificationService service, NewIssuesNotificationFactory newIssuesNotificationFactory) {
     this.issueCache = issueCache;
     this.rules = rules;
     this.service = service;
-    this.durations = durations;
+    this.newIssuesNotificationFactory = newIssuesNotificationFactory;
   }
 
   @Override
   public String[] supportedProjectQualifiers() {
-    return new String[] {Qualifiers.PROJECT};
+    return new String[]{Qualifiers.PROJECT};
   }
 
   @Override
@@ -100,23 +96,27 @@ public class SendIssueNotificationsStep implements ComputationStep {
     if (statistics.hasIssues()) {
       NewIssuesStatistics.Stats globalStatistics = statistics.globalStatistics();
       ComponentDto project = context.getProject();
-      NewIssuesNotification notification = new NewIssuesNotification();
-      notification.setProject(project);
-      notification.setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()));
-      notification.setStatistics(project, globalStatistics);
-      notification.setDebt(durations.encode(globalStatistics.debt()));
+      NewIssuesNotification notification = newIssuesNotificationFactory
+        .newNewIssuesNotication()
+        .setProject(project)
+        .setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()))
+        .setStatistics(project, globalStatistics)
+        .setDebt(globalStatistics.debt());
       service.deliver(notification);
 
+      // send email to each user having issues
       for (Map.Entry<String, NewIssuesStatistics.Stats> assigneeAndStatisticsTuple : statistics.assigneesStatistics().entrySet()) {
         String assignee = assigneeAndStatisticsTuple.getKey();
         NewIssuesStatistics.Stats assigneeStatistics = assigneeAndStatisticsTuple.getValue();
-        MyNewIssuesNotification myNewIssuesNotification = new MyNewIssuesNotification()
+        MyNewIssuesNotification myNewIssuesNotification = newIssuesNotificationFactory
+          .newMyNewIssuesNotification()
           .setAssignee(assignee);
-        myNewIssuesNotification.setProject(project);
-        myNewIssuesNotification.setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()));
-        myNewIssuesNotification.setStatistics(project, assigneeStatistics);
-        myNewIssuesNotification.setDebt(durations.encode(assigneeStatistics.debt()));
-        
+        myNewIssuesNotification
+          .setProject(project)
+          .setAnalysisDate(new Date(context.getReportMetadata().getAnalysisDate()))
+          .setStatistics(project, assigneeStatistics)
+          .setDebt(assigneeStatistics.debt());
+
         service.deliver(myNewIssuesNotification);
       }
     }
