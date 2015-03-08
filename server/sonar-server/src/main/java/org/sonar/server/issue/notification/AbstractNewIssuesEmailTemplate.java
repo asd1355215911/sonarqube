@@ -172,7 +172,10 @@ public abstract class AbstractNewIssuesEmailTemplate extends EmailTemplate {
       Date date = DateUtils.parseDateTime(dateString);
       String url = String.format("%s/issues/search#projectUuids=%s|createdAt=%s",
         settings.getServerBaseURL(), encode(projectUuid), encode(DateUtils.formatDateTime(date)));
-      message.append("\n").append("See it in SonarQube: ").append(url).append(NEW_LINE);
+      message
+        .append("See it in SonarQube: ")
+        .append(url)
+        .append(NEW_LINE);
     }
   }
 

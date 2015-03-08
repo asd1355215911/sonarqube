@@ -43,12 +43,12 @@ public class NewIssuesEmailTemplateTest {
   private static final String EMAIL_HEADER = "Project: Struts\n\n";
   private static final String EMAIL_TOTAL_ISSUES = "32 new issues (new debt: 1d3h)\n\n";
   private static final String EMAIL_ISSUES = "    Severity\n        Blocker: 0    Critical: 5    Major: 10    Minor: 3    Info: 1\n\n";
-  private static final String EMAIL_ASSIGNEES = "    Assignee\n        robin.williams: 5\n        al.pacino: 7\n";
-  private static final String EMAIL_TAGS = "   Tags - oscar: 3   cesar: 10   \n";
-  private static final String EMAIL_COMPONENTS = "   Components:\n" +
-    "      /path/to/file : 3\n" +
-    "      /path/to/directory : 7\n";
-  private static final String EMAIL_FOOTER = "\nSee it in SonarQube: http://nemo.sonarsource.org/issues/search#projectUuids=ABCDE|createdAt=2010-05-1";
+  private static final String EMAIL_ASSIGNEES = "    Assignees\n        robin.williams: 5\n        al.pacino: 7\n\n";
+  private static final String EMAIL_TAGS = "    Tags\n        oscar: 3\n        cesar: 10\n\n";
+  private static final String EMAIL_COMPONENTS = "    Most impacted files\n" +
+    "        /path/to/file: 3\n" +
+    "        /path/to/directory: 7\n\n";
+  private static final String EMAIL_FOOTER = "See it in SonarQube: http://nemo.sonarsource.org/issues/search#projectUuids=ABCDE|createdAt=2010-05-1";
 
   NewIssuesEmailTemplate template;
   DefaultI18n i18n;
